@@ -193,7 +193,7 @@ def write_castep(fname,castep_objs):
             file.write(repr(obj))
             file.write("\n")
 
-def run(f_in,f_out,spin):
+def convert(f_in,f_out,spin):
     vesta_objs = read_vesta(f_in)
     castep_objs = vesta_to_castep(vesta_objs,spin)
     write_castep(f_out,castep_objs)
@@ -206,4 +206,4 @@ if __name__=="__main__":
         f_out = args.out
     else:
         f_out = f_in
-    run(f_in,f_out,spin)
+    convert(f_in,f_out,spin)
