@@ -1,16 +1,28 @@
 import argparse
 
+# set up command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("-s","--seed",help="seedname for input .vesta file",required=True)
 parser.add_argument("-sp","--spin",help="treatment of spin",default="nospin",choices=["nospin","collinear","noncollinear"])
 parser.add_argument("-o","--out",help="seedname for output .cell file (optional)")
 
 class symop:
-    def __init__(self,vector,matrix):
+    """holds a single symmetry operation from a .vesta SYMOP block
+    Args:
+        vector (list[float]) : vector symmetry operation
+        matrix (list[list[float]]) : matrix symmetry operation
+    """
+    def __init__(self,vector:list[float],matrix:list[list[float]]):
         self.vector = vector
         self.matrix = matrix
 
-    def apply(self,vector):
+    def apply(self,vector:list[float])->list[float]:
+        """applys fully symmetry operation (matrix and vector) to the input vector
+        Args:
+            vector (list[float]): vector to be transformed
+        Returns:
+            list[float]: transformed vector
+        """
         temp = [0,0,0]
         for i in range(3):
             for j in range(3):
@@ -18,7 +30,15 @@ class symop:
             temp[i] += self.vector[i]
         return temp
 
-    def apply_mat(self,vector):
+    def apply_mat(self,vector:list[float])->list[float]:
+        """applys the matrix symmetry operation to the input vector
+
+        Args:
+            vector (list[float]): vector to be transformed
+
+        Returns:
+            list[float]: transformed vector
+        """
         temp = [0,0,0]
         for i in range(3):
             for j in range(3):
@@ -26,12 +46,20 @@ class symop:
         return temp
 
 class vesta_symop:
-    def __init__(self,data):
+    """holds all symmetry operations from a .vesta SYMOP block
+    Args:
+        data (list[str]) : SYMOP block from .vesta file
+    Attributes:
+        symops (list[symop]) : 
+    """
+    def __init__(self,data:list[str]):
         self.data = data
         self.symops = []
         self.parse()
 
     def parse(self):
+        """parses a .vesta SYMOP block
+        """
         for line in self.data:
             sep = line.split()
             vec = list(map(float,sep[0:3]))
@@ -42,17 +70,34 @@ class vesta_symop:
             self.symops.append(s)
 
 class vesta_cellp:
-    def __init__(self,data):
+    """holds all cell parameters from a .vesta CELLP block
+    Args:
+        data (list[str]) : CELLP block from .vesta file
+    Attributes:
+        params (list[float]) : magnitude of the lattice vectors a,b,c
+        angles (list[float]) : angles between the lattice vectors α,β,γ
+    """
+    def __init__(self,data:list[str]):
         self.data = data
         self.params = []
         self.angles = []
         self.parse()
 
     def parse(self):
+        """parse a .vesta CELLP block
+        """
         self.params = list(map(float,self.data[0].split()[0:3]))
         self.angles = list(map(float,self.data[0].split()[3:]))
 
 class vesta_struc:
+    """holds all atomic positions from a .vesta STRUC block
+    Args:
+        data (list[str]) : STRUC block from a .vesta file
+    Attributes:
+        atoms (list[str]) : element symbols
+        positions (list[list[float]]) : atomic positions
+        symops (list[int]) : how many symops apply to each atomic position
+    """
     def __init__(self,data):
         self.data = data
         self.atoms = []
@@ -61,6 +106,8 @@ class vesta_struc:
         self.parse()
 
     def parse(self):
+        """parses a .vesta STRUC block
+        """
         for line in self.data:
             if "." not in line.split()[0] and line[0] != "0":
                 self.atoms.append(line.split()[1])
@@ -68,15 +115,24 @@ class vesta_struc:
                 self.symops.append(int(line.split()[7]))
 
 class vesta_vectr:
+    """holds all spin vectors from a .vesta VECTR block
+    Args:
+        data (list[str]) : VECTR block from a .vesta file
+    Attributes:
+        vectors (list[list[float]]) : spin vectors
+    """
     def __init__(self,data):
         self.data = data
         self.vectors = []
         self.parse()
 
     def parse(self):
+        """parses a .vesta VECTR block
+        """
         for i in range(0,len(self.data)-2,3):
             self.vectors.append(list(map(float,self.data[i].split()[1:4])))
 
+# map vesta keywords to class
 vesta_block = {"SYMOP": vesta_symop,
                "CELLP": vesta_cellp,
                "STRUC": vesta_struc,
